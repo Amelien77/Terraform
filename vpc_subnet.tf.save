@@ -1,0 +1,63 @@
+########## Création du VPC datascientest ##########
+resource "aws_vpc" "datascientest_vpc" {
+  cidr_block           = var.cidr_vpc
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = {
+    Name = "datascientest-vpc"
+  }
+}
+
+########## Sous-réseaux publics ##########
+resource "aws_subnet" "public_subnet_a" {
+  vpc_id                  = aws_vpc.datascientest_vpc.id
+  cidr_block              = var.cidr_public_subnet_a
+  map_public_ip_on_launch = true
+  availability_zone       = var.az_a
+  tags = {
+    Name        = "public-a"
+    Environment = var.environment
+  }
+  depends_on = [aws_vpc.datascientest_vpc]
+}
+
+resource "aws_subnet" "public_subnet_b" {
+  vpc_id                  = aws_vpc.datascientest_vpc.id
+  cidr_block              = var.cidr_public_subnet_b
+  map_public_ip_on_launch = true
+  availability_zone       = var.az_b
+  tags = {
+    Name        = "public-b"
+    Environment = var.environment
+  }
+  depends_on = [aws_vpc.datascientest_vpc]
+}
+#aws_vpc.datascientest_vpc.id permet de lié les sous-réseaux au vpc
+#availability_zone = var.az_X définit l'AZ pour chaque sous-réseaux (pour la haute disponibilité)   
+#cidr_block = var.cidr_public_subnet_X définit une plage d'adresse IP, par défaut: "10.1.0.0/24" --> variables.tf 
+#map_public_ip_on_launch = true génère une adresse IP publique automatiquement (seulement pour réseau publiques)
+
+
+############# Sous-réseaux privés ##########
+resource "aws_subnet" "app_subnet_a" {
+  vpc_id                  = aws_vpc.datascientest_vpc.id
+  cidr_block              = var.cidr_app_subnet_a
+  availability_zone       = var.az_a
+  tags = {
+    Name        = "app-a"
+    Environment = var.environment
+  }
+  depends_on = [aws_vpc.datascientest_vpc]
+}
+
+resource "aws_subnet" "app_subnet_b" {
+  vpc_id                  = aws_vpc.datascientest_vpc.id
+  cidr_block              = var.cidr_app_subnet_b
+  availability_zone       = var.az_b
+  tags = {
+    Name        = "app-b"
+    Environment = var.environment
+  }
+  depends_on = [aws_vpc.datascientest_vpc]
+}
+
