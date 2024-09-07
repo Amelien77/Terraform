@@ -12,5 +12,5 @@ variable "db_password" {
 variable "allowed_ssh_ips" {
   description = "Les adresses IP autorisées pour l'accès SSH au bastion"
   type        = list(string)
-  default     = ["YOUR_IP_ADDRESS/32"]  # Remplacez par votre adresse IP
+  default     = ["34.241.31.66/32"]  # Replace with your actual IP address
 }

@@ -39,6 +39,7 @@ resource "aws_subnet" "public_subnet_b" {
     Environment = var.environment
   }
   depends_on = [aws_vpc.datascientest_vpc]
+}
 
 ########## Sous-réseaux privés ##########
 resource "aws_subnet" "app_subnet_a" {

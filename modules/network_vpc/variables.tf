@@ -1,7 +1,7 @@
 variable "environment" {
   description = "L'environnement pour les ressources"
   type        = string
-  default     = "dev" # Vous pouvez définir la valeur par défaut souhaitée
+  default     = "dev"
 }
 
 variable "cidr_vpc" {
