@@ -20,3 +20,12 @@ module "database" {
   private_subnets = module.network_vpc.private_subnets
   app_subnet_cidrs = module.network_vpc.app_subnet_cidrs
 }
+
+module "bastion" {
+  source          = "./modules/bastion"
+  vpc_id          = module.network_vpc.vpc_id
+  public_subnets  = module.network_vpc.public_subnets
+  allowed_ssh_ips = ["YOUR_IP_ADDRESS/32"]  # Remplacez par votre adresse IP
+
+  depends_on = [module.network_vpc]
+}
