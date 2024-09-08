@@ -1,6 +1,7 @@
 variable "db_username" {
   description = "Nom d'utilisateur pour la base de données"
   type        = string
+  sensitive   = true
 }
 
 variable "db_password" {

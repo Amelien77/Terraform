@@ -8,8 +8,8 @@ terraform {
             }
 provider "aws" {
     region = "eu-west-3"
-    access_key = "" # la clé d'acces crée pour l'utilisateur qu>
-    secret_key = "" # la clé sécrète crée p>
+    access_key = var.aws_access_key
+    secret_key = var.aws_secret_key
             }
 
 # région eu-west-3
