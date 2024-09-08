@@ -30,7 +30,7 @@ resource "aws_db_instance" "wordpress_db" {
 # publicly_accessible  = false on ne souhaite pas que l'accès soit publique
 # vpc_security_group_ids = [aws_security_group.db_sg.id] liste des groupes de sécu attaché à la db
 
-######### groupe de sous-réseaux pour db ############
+#--------------- groupe de sous-réseaux pour db ------------------------------#
 
 resource "aws_db_subnet_group" "db_subnet" {
   name       = "wordpress-db-subnet"
@@ -43,7 +43,7 @@ resource "aws_db_subnet_group" "db_subnet" {
 
 # création d'un groupe réseau pour db en prenant l'ID d'un sous réseau--> variables.tf 
 
-########## groupe de sécurité pour db ##########
+#------------------ groupe de sécurité pour db -------------------------------#
 
 resource "aws_security_group" "db_sg" {
   name        = "wordpress-db-sg"

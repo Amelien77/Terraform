@@ -1,4 +1,5 @@
-########## Sélection de la dernière AMI AWS pour le Bastion #########
+#---------------Sélection de la dernière AMI AWS pour le Bastion ------------#
+
 data "aws_ami" "bastion_ami" {
   most_recent = true
   owners      = ["amazon"]
@@ -9,10 +10,10 @@ data "aws_ami" "bastion_ami" {
 }
 
 # définit une data source pour rechercher une AMI la plus récente
-# filter = filtre name avec values
 
 
-########## Groupe de sécurité pour le Bastion ##########
+#--------------- Groupe de sécurité pour le Bastion ------------------------#
+
 resource "aws_security_group" "bastion_sg" {
   name        = "bastion-sg"
   description = "Groupe de sécurité pour le Bastion"
@@ -37,9 +38,7 @@ resource "aws_security_group" "bastion_sg" {
   }
 }
 
-# définit un groupe de sécurité pour l'instance bastion avec règles parfeu (ingress et egress)
-
-
+#----------------- Instance bastion ---------------------------------------#
 
 resource "aws_instance" "bastion" {
   ami           = var.ami_id
@@ -55,7 +54,7 @@ resource "aws_instance" "bastion" {
   associate_public_ip_address = true
 }
 
-
+#-------------------------Interface réseau pour le bastion-------------------#
 
 resource "aws_network_interface" "bastion_nic" {
   subnet_id   = var.subnet_id
@@ -68,7 +67,8 @@ resource "aws_network_interface" "bastion_nic" {
 }
 
 
-########## Configuration de lancement pour le bastion ##########
+#---------------------- Configuration de lancement pour le bastion------------#
+
 resource "aws_launch_configuration" "bastion_lc" {
   name          = "bastion-lc"
   image_id      = data.aws_ami.bastion_ami.id
@@ -112,5 +112,5 @@ resource "aws_autoscaling_group" "bastion_asg" {
 # launch_configuration = aws_launch_configuration.bastion_lc.id permet de lié l'autoscaling à notre instance bastion
 # vpc_zone_identifier  = var.public_subnets spécifie les sous-réseaux publics dans lesquels les instances seront lancées --> variables
 # tag permet de donner le nom "bastion-instance" à toutes les instances créer par cet autoscaling
-# lifecycle ... permet de s'assurer que la nouvelle instance soit créer avant la suppression de l'ancienne pour éviter les interruptions
+# lifecycle ... permet de s'assurer que la nouvelle instance soit créée avant la suppression de l'ancienne pour éviter les interruptions
 

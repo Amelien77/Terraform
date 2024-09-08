@@ -1,12 +1,9 @@
+
+
 module "network_vpc" {
   source = "./modules/network_vpc"
-  # Pass the required variables
-  # Example:
-  # cidr_vpc = "10.0.0.0/16"
-  # az_a = "eu-west-3a"
-  # az_b = "eu-west-3b"
-  # etc.
 }
+
 
 module "wordpress" {
   source = "./modules/wordpress"
@@ -18,6 +15,7 @@ module "wordpress" {
   ami_id = ""
   wordpress_asg_id = module.load_balancer.wordpress_asg_id
 }
+
 
 module "database" {
   source          = "./modules/database"
@@ -34,6 +32,7 @@ module "database" {
   ]
 }
 
+
 module "bastion" {
   source          = "./modules/bastion"
   vpc_id          = module.network_vpc.vpc_id
@@ -41,12 +40,11 @@ module "bastion" {
   subnet_id       = module.network_vpc.public_subnet_a_id
   allowed_ssh_ips = ["34.241.31.66/32"]
 
-  ami_id          = "ami-12345678"  # Remplace par l'AMI appropriée
-  instance_type   = "t2.micro"      # Remplace par le type d'instance souhaité
+  ami_id          = "ami-12345678"  
+  instance_type   = "t2.micro"     
 
   depends_on = [module.network_vpc]
 }
-
 
 
 module "load_balancer" {
@@ -57,8 +55,8 @@ module "load_balancer" {
 
   asg_min_size    = 1
   asg_max_size    = 3
-  ami_id          = "ami-12345678"   # Remplace par l'AMI appropriée
-  instance_type   = "t2.micro"       # Remplace par le type d'instance approprié
+  ami_id          = "ami-12345678"   
+  instance_type   = "t2.micro"     
   tags            = {
     Name = "wordpress-instance"
   }

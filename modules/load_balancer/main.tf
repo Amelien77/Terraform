@@ -1,6 +1,5 @@
-#----------------------------Load Balancer----------------------------#
 
-########## Création load Balancer ###############
+#----------------------- Création load Balancer ---------------------------#
 resource "aws_lb" "wordpress_alb" {
   name               = "wordpress-alb"
   internal           = false
@@ -12,7 +11,13 @@ resource "aws_lb" "wordpress_alb" {
   idle_timeout = 60
 }
 
-########### Déclaration du groupe de mise à l'échelle automatique ##########
+#internal = false car accessible depuis l'extérieur.
+#load_balancer_type = "application" car type ALB
+#enable_deletion_protection = false empèche la suppression accidentelle
+#idle_timeout = 60 rend inactif au bout de 60s
+
+
+#---------- Déclaration du groupe de mise à l'échelle automatique -------------#
 resource "aws_autoscaling_group" "wordpress_asg" {
   launch_configuration = aws_launch_configuration.wordpress_lc.id
   vpc_zone_identifier  = var.private_subnets
@@ -26,7 +31,7 @@ resource "aws_autoscaling_group" "wordpress_asg" {
   }
 }
 
-########## configuration de lancement de l'autoscaling #############
+#----------- configuration de lancement de l'autoscaling ---------------------#
 
 resource "aws_launch_configuration" "wordpress_lc" {
   name          = "wordpress-launch-configuration"
@@ -41,7 +46,7 @@ resource "aws_launch_configuration" "wordpress_lc" {
 }
 
 
-########## Création groupe de sécurité pour lb ################
+#------------------ Création groupe de sécurité pour lb ---------------------#
 resource "aws_security_group" "alb_sg" {
   name        = "alb-sg"
   description = "Groupe de sécurité pour l'ALB"
@@ -69,7 +74,7 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
-########## Création groupe de sécurité wordpress ##########
+#------------------- Création groupe de sécurité wordpress -----------------#
 
 resource "aws_security_group" "wordpress_sg" {
   name        = "wordpress-sg"
@@ -99,7 +104,7 @@ resource "aws_security_group" "wordpress_sg" {
 }
 
 
-############ Création du target group ##############
+#-------------- Création du target group -----------------------------------#
 resource "aws_lb_target_group" "wordpress_tg" {
   name     = "wordpress-tg"
   port     = 80
@@ -116,13 +121,13 @@ resource "aws_lb_target_group" "wordpress_tg" {
   }
 }
 
-########### association instances au groupe cible via auto-scaling ###########
+#----------- association instances au groupe cible via auto-scaling ----------#
 resource "aws_autoscaling_attachment" "asg_attachment" {
   autoscaling_group_name = aws_autoscaling_group.wordpress_asg.name
   lb_target_group_arn    = aws_lb_target_group.wordpress_tg.arn
 }
 
-########### Listener sur port HTTP ############
+#---------------------- Listener sur port HTTP -------------------------------#
 
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.wordpress_alb.arn
@@ -140,7 +145,7 @@ resource "aws_lb_listener" "http_listener" {
 }
 
 
-########### Listener sur port HTTPS ############
+#------------------- Listener sur port HTTPS ----------------------#
 resource "aws_lb_listener" "https_listener" {
   load_balancer_arn = aws_lb.wordpress_alb.arn
   port              = 443
@@ -156,7 +161,7 @@ resource "aws_lb_listener" "https_listener" {
 
 #-----------------------accès sécurisé (BONUS)------------------#
 
-########## Création du certificat SSL/TLS ##################
+#---------------- Création du certificat SSL/TLS ------------------#
 resource "aws_acm_certificate" "wordpress_cert" {
   domain_name       = "ambonneau-devops.cloudns.be"
   validation_method = "DNS"
