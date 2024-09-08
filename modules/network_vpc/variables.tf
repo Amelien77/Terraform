@@ -38,3 +38,9 @@ variable "az_b" {
   description = "Zone de disponibilité B"
   default     = "eu-west-3b"
 }
+
+variable "cidr_internet_access" {
+  description = "CIDR pour accéder à Internet (par défaut : 0.0.0.0/0)"
+  type        = string
+  default     = "0.0.0.0/0"
+}

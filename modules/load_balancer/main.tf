@@ -1,21 +1,47 @@
-
 #----------------------------Load Balancer----------------------------#
 
 ########## Création load Balancer ###############
 resource "aws_lb" "wordpress_alb" {
   name               = "wordpress-alb"
-  internal           = false  # Ce doit être un ALB externe (accessible depuis l'extérieur)
+  internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = var.public_subnets  # Les sous-réseaux publics pour l'ALB
+  subnets            = var.public_subnets
 
-  enable_deletion_protection = false  # Facultatif, pour la protection contre la suppression accidentelle
+  enable_deletion_protection = false
   idle_timeout = 60
+}
+
+########### Déclaration du groupe de mise à l'échelle automatique ##########
+resource "aws_autoscaling_group" "wordpress_asg" {
+  launch_configuration = aws_launch_configuration.wordpress_lc.id
+  vpc_zone_identifier  = var.private_subnets
+  min_size             = var.asg_min_size
+  max_size             = var.asg_max_size
+
+  tag {
+    key                 = "Name"
+    value               = var.tags["Name"]
+    propagate_at_launch = true
+  }
+}
+
+########## configuration de lancement de l'autoscaling #############
+
+resource "aws_launch_configuration" "wordpress_lc" {
+  name          = "wordpress-launch-configuration"
+  image_id      = var.ami_id
+  instance_type = var.instance_type
+
+  security_groups = [aws_security_group.wordpress_sg.id]
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 
 ########## Création groupe de sécurité pour lb ################
-
 resource "aws_security_group" "alb_sg" {
   name        = "alb-sg"
   description = "Groupe de sécurité pour l'ALB"
@@ -25,14 +51,43 @@ resource "aws_security_group" "alb_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Autorise les connexions HTTP depuis l'extérieur
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Autorise les connexions HTTPS si configuré
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+########## Création groupe de sécurité wordpress ##########
+
+resource "aws_security_group" "wordpress_sg" {
+  name        = "wordpress-sg"
+  description = "Groupe de sécurité pour les instances WordPress"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -45,11 +100,9 @@ resource "aws_security_group" "alb_sg" {
 
 
 ############ Création du target group ##############
-# contient les instances Wordpress vers lesquelles le trafic sera redirigé
-
 resource "aws_lb_target_group" "wordpress_tg" {
   name     = "wordpress-tg"
-  port     = 80  # Le port sur lequel le service WordPress écoute
+  port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
@@ -59,24 +112,41 @@ resource "aws_lb_target_group" "wordpress_tg" {
     timeout             = 5
     healthy_threshold   = 5
     unhealthy_threshold = 2
-    matcher             = "200"  # Vérifie si le serveur répond avec un statut HTTP 200
+    matcher             = "200"
   }
 }
 
 ########### association instances au groupe cible via auto-scaling ###########
-
 resource "aws_autoscaling_attachment" "asg_attachment" {
   autoscaling_group_name = aws_autoscaling_group.wordpress_asg.name
-  alb_target_group_arn   = aws_lb_target_group.wordpress_tg.arn
+  lb_target_group_arn    = aws_lb_target_group.wordpress_tg.arn
 }
 
 ########### Listener sur port HTTP ############
-
 
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.wordpress_alb.arn
   port              = 80
   protocol          = "HTTP"
+
+  default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "OK"
+      status_code  = "200"
+    }
+  }
+}
+
+
+########### Listener sur port HTTPS ############
+resource "aws_lb_listener" "https_listener" {
+  load_balancer_arn = aws_lb.wordpress_alb.arn
+  port              = 443
+  protocol          = "HTTPS"
+
+  certificate_arn = aws_acm_certificate.wordpress_cert.arn
 
   default_action {
     type             = "forward"
@@ -88,7 +158,7 @@ resource "aws_lb_listener" "http_listener" {
 
 ########## Création du certificat SSL/TLS ##################
 resource "aws_acm_certificate" "wordpress_cert" {
-  domain_name       = terraform.ambonneau-devops.cloudns.be
+  domain_name       = "ambonneau-devops.cloudns.be"
   validation_method = "DNS"
 
   tags = {
@@ -96,47 +166,3 @@ resource "aws_acm_certificate" "wordpress_cert" {
   }
 }
 
-# création d'un nom de domaine avec cloudns.
-# domaine_name on spécifie le nom du domaine
-
-
-########## Validation du certificat SSL/TLS ##################
-resource "aws_route53_record" "cert_validation" {
-  name    = aws_acm_certificate.wordpress_cert.domain_validation_options[0].resource_record_name
-  type    = aws_acm_certificate.wordpress_cert.domain_validation_options[0].resource_record_type
-  zone_id  = var.route53_zone_id
-  records  = [aws_acm_certificate.wordpress_cert.domain_validation_options[0].resource_record_value]
-  ttl      = 60
-}
-
-
-########### Listener sur port HTTPS ############
-resource "aws_lb_listener" "https_listener" {
-  load_balancer_arn = aws_lb.wordpress_alb.arn
-  port              = 443
-  protocol          = "HTTPS"
-
-  ssl_certificate_arn = aws_acm_certificate.wordpress_cert.arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.wordpress_tg.arn
-  }
-}
-
-
-########### Redirection HTTP vers HTTPS ############
-resource "aws_lb_listener" "http_redirect" {
-  load_balancer_arn = aws_lb.wordpress_alb.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type = "redirect"
-    redirect {
-      protocol = "HTTPS"
-      port     = "443"
-      status_code = "HTTP_301"
-    }
-  }
-}

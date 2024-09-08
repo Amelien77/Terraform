@@ -11,7 +11,7 @@ variable "private_subnets" {
 variable "ami_id" {
   description = "ID de l'AMI Ubuntu à utiliser pour les instances WordPress"
   type        = string
-  default     = "" 
+  default     = ""
 }
 
 variable "instance_type" {
@@ -46,3 +46,9 @@ variable "tags" {
     Environment = "dev"
   }
 }
+
+variable "wordpress_asg_id" {
+  description = "ID du Auto Scaling Group pour WordPress"
+  type        = string
+}
+

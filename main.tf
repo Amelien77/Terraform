@@ -15,7 +15,8 @@ module "wordpress" {
     module.network_vpc.app_subnet_a_id,
     module.network_vpc.app_subnet_b_id
   ]
-  ami_id = ""  # Leave empty if using dynamic AMI retrieval or specify if known
+  ami_id = ""
+  wordpress_asg_id = module.load_balancer.wordpress_asg_id
 }
 
 module "database" {
@@ -28,7 +29,6 @@ module "database" {
     module.network_vpc.app_subnet_b_id
   ]
   app_subnet_cidrs = [
-    # Ensure this list matches the actual CIDRs of the application subnets
     "10.1.2.0/24",
     "10.1.3.0/24"
   ]
@@ -37,19 +37,30 @@ module "database" {
 module "bastion" {
   source          = "./modules/bastion"
   vpc_id          = module.network_vpc.vpc_id
-  public_subnets  = [
-    module.network_vpc.public_subnet_a_id,
-    module.network_vpc.public_subnet_b_id
-  ]
-  allowed_ssh_ips = ["34.241.31.66/32"] 
+  public_subnets  = module.network_vpc.public_subnets
+  subnet_id       = module.network_vpc.public_subnet_a_id
+  allowed_ssh_ips = ["34.241.31.66/32"]
+
+  ami_id          = "ami-12345678"  # Remplace par l'AMI appropriée
+  instance_type   = "t2.micro"      # Remplace par le type d'instance souhaité
 
   depends_on = [module.network_vpc]
 }
 
+
+
 module "load_balancer" {
-  source = "./modules/load_balancer"
-  
-  vpc_id          = module.network_vpc.vpc_id
+  source          = "./modules/load_balancer"
   public_subnets  = module.network_vpc.public_subnets
-  instance_ports  = [80, 443]  # Exemple de ports pour le load balancer
+  private_subnets = module.network_vpc.private_subnets
+  vpc_id          = module.network_vpc.vpc_id
+
+  asg_min_size    = 1
+  asg_max_size    = 3
+  ami_id          = "ami-12345678"   # Remplace par l'AMI appropriée
+  instance_type   = "t2.micro"       # Remplace par le type d'instance approprié
+  tags            = {
+    Name = "wordpress-instance"
+  }
 }
+

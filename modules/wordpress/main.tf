@@ -47,9 +47,9 @@ resource "aws_security_group" "wordpress_sg" {
 
 # conf. de lancement instances EC2 pour Auto Scaling Group
 resource "aws_launch_configuration" "wordpress_lc" {
-  name          = "wordpress_lc"
+  name          = var.launch_configuration_name
   image_id      = data.aws_ami.ubuntu.id
-  instance_type = "t2.micro"
+  instance_type = var.instance_type
   security_groups = [
     aws_security_group.wordpress_sg.id
   ]
@@ -66,7 +66,6 @@ resource "aws_launch_configuration" "wordpress_lc" {
               ln -s /usr/share/wordpress /var/www/html/wordpress
               EOF
 }
-
 # image_id = data.aws_ami.ubuntu.id on utilise l'AMI généré plus haut
 # instance_type = "t2.micro", type d'instance la plus petite d'AWS. 
 # security_groups --> security group à utiliser sur l'instance.
@@ -78,12 +77,12 @@ resource "aws_launch_configuration" "wordpress_lc" {
 resource "aws_autoscaling_group" "wordpress_asg" {
   launch_configuration = aws_launch_configuration.wordpress_lc.id
   vpc_zone_identifier  = var.private_subnets
-  min_size             = 1
-  max_size             = 2
+  min_size             = var.asg_min_size
+  max_size             = var.asg_max_size
 
   tag {
     key                 = "Name"
-    value               = "wordpress-instance"
+    value               = var.tags["Name"]
     propagate_at_launch = true
   }
 }
@@ -92,3 +91,26 @@ resource "aws_autoscaling_group" "wordpress_asg" {
 # vpc_zone_identifier  = var.private_subnets Liste les sous-réseaux pricé dans lequel l'instance doit être lancé
 # min/max size détermine le minimum et maximum d'instance déployable
 # tag ... propagate_at_launch = true définit le nom/balise automatiquement pour chaque nouvelle instance créé.
+
+
+resource "aws_autoscaling_attachment" "asg_attachment" {
+  autoscaling_group_name = aws_autoscaling_group.wordpress_asg.name
+  lb_target_group_arn    = aws_lb_target_group.wordpress_tg.arn
+}
+
+
+resource "aws_lb_target_group" "wordpress_tg" {
+  name     = "wordpress-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+}

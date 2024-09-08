@@ -1,15 +1,14 @@
 ########## Sélection de la dernière AMI AWS pour le Bastion #########
 data "aws_ami" "bastion_ami" {
   most_recent = true
-  owners      = ["137112412989"]
+  owners      = ["amazon"]
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    values = ["amzn2-ami-hvm-*"]
   }
 }
 
 # définit une data source pour rechercher une AMI la plus récente
-# owners = ["137112412989"] ID du propriétaire
 # filter = filtre name avec values
 
 
@@ -40,6 +39,33 @@ resource "aws_security_group" "bastion_sg" {
 
 # définit un groupe de sécurité pour l'instance bastion avec règles parfeu (ingress et egress)
 
+
+
+resource "aws_instance" "bastion" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  subnet_id     = var.subnet_id
+
+  vpc_security_group_ids = [aws_security_group.bastion_sg.id]
+
+  tags = {
+    Name = "Bastion-Instance"
+  }
+
+  associate_public_ip_address = true
+}
+
+
+
+resource "aws_network_interface" "bastion_nic" {
+  subnet_id   = var.subnet_id
+  private_ips  = [var.private_ip]
+  security_groups = [var.security_group_id]
+
+  tags = {
+    Name = "bastion-nic"
+  }
+}
 
 
 ########## Configuration de lancement pour le bastion ##########
@@ -87,3 +113,4 @@ resource "aws_autoscaling_group" "bastion_asg" {
 # vpc_zone_identifier  = var.public_subnets spécifie les sous-réseaux publics dans lesquels les instances seront lancées --> variables
 # tag permet de donner le nom "bastion-instance" à toutes les instances créer par cet autoscaling
 # lifecycle ... permet de s'assurer que la nouvelle instance soit créer avant la suppression de l'ancienne pour éviter les interruptions
+

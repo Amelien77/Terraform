@@ -13,7 +13,7 @@ output "bastion_lc_id" {
   value       = aws_launch_configuration.bastion_lc.id
 }
 
-output "bastion_instance_ips" {
-  description = "Liste des IPs publiques des instances Bastion"
-  value       = aws_instance.bastion_instance.*.public_ip
+output "bastion_instance_id" {
+  description = "ID de l'instance Bastion"
+  value       = aws_instance.bastion.id
 }
