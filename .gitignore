@@ -1,4 +1,4 @@
 terraform.tfvars
 *.save
 .terraform/providers/registry.terraform.io/hashicorp/aws/5.66.0/linux_amd64/terraform-provider-aws_v5.66.0_x5
-
+/home/ubuntu/terraform/exam-terraform
